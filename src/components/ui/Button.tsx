@@ -12,8 +12,7 @@ export default function Button({ text, color }: ButtonProps) {
 
   return (
     <button
-      className={`${colors[color]} text-white px-4 py-2 rounded-lg transition`}
-    >
+className={`${colors[color]} rounded-lg px-5 py-2 text-white font-medium transition duration-300 hover:scale-105`} >
       {text}
     </button>
   );
