@@ -1,9 +1,14 @@
 type ButtonProps = {
   text: string;
   color: "blue" | "green" | "red";
+  fullWidth: boolean;
 };
 
-export default function Button({ text, color }: ButtonProps) {
+export default function Button({
+  text,
+  color,
+  fullWidth,
+}: ButtonProps) {
   const colors = {
     blue: "bg-blue-600 hover:bg-blue-700",
     green: "bg-green-600 hover:bg-green-700",
@@ -12,7 +17,10 @@ export default function Button({ text, color }: ButtonProps) {
 
   return (
     <button
-className={`${colors[color]} rounded-lg px-5 py-2 text-white font-medium transition duration-300 hover:scale-105`} >
+      className={`${colors[color]} ${
+        fullWidth ? "w-full" : ""
+      } rounded-lg px-5 py-3 text-white font-medium transition duration-300 hover:scale-105`}
+    >
       {text}
     </button>
   );
