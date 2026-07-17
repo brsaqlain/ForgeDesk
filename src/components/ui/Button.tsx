@@ -2,12 +2,15 @@ type ButtonProps = {
   text: string;
   color: "blue" | "green" | "red";
   fullWidth: boolean;
+  onClick?: () => void;
 };
 
 export default function Button({
   text,
   color,
   fullWidth,
+    onClick,
+  
 }: ButtonProps) {
   const colors = {
     blue: "bg-blue-600 hover:bg-blue-700",
@@ -17,6 +20,7 @@ export default function Button({
 
   return (
     <button
+    onClick={onClick}
       className={`${colors[color]} ${
         fullWidth ? "w-full" : ""
       } rounded-lg px-5 py-3 text-white font-medium transition duration-300 hover:scale-105`}

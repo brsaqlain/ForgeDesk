@@ -5,6 +5,8 @@ type InputProps = {
   type: string;
   placeholder?: string;
   icon?: ReactNode;
+  value?: string;
+onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onIconClick?: () => void;
 };
 
@@ -14,6 +16,8 @@ export default function Input({
   placeholder,
   icon,
   onIconClick,
+ value,
+  onChange,
 }: InputProps) {
   return (
     <div className="mb-4">
@@ -23,9 +27,12 @@ export default function Input({
 
       <div className="relative">
         <input
+        
           type={type}
           placeholder={placeholder}
           className="w-full rounded-lg border border-gray-300 p-3 pr-12 outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-200"
+          value={value}
+          onChange={onChange}
         />
 
         {icon &&

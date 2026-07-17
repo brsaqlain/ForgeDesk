@@ -11,7 +11,8 @@ export default function Hero() {
   </span>
 </h1>
 
-<p className="mt-6 max-w-2xl text-xl leading-8 text-gray-600">        Organize your projects, snippets, journals, and development workflow in one place.
+<p className="mt-6 max-w-2xl text-xl leading-8 text-gray-600">  
+        Organize your projects, snippets, journals, and development workflow in one place.
       </p>
 
 <div className="mt-8 flex flex-wrap justify-center gap-4">
