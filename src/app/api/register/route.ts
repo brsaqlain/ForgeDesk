@@ -5,7 +5,18 @@ import { prisma } from "@/lib/prisma";
 export async function POST(request: Request) {
   try {
     const { name, email, password } = await request.json();
+const existingUser = await prisma.user.findUnique({
+  where: {
+    email,
+  },
+});
 
+if (existingUser) {
+  return NextResponse.json(
+    { message: "Email already registered" },
+    { status: 409 }
+  );
+}
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({

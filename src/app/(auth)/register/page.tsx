@@ -25,7 +25,11 @@ export default function RegisterPage() {
 
   const data = await response.json();
 
-  console.log(data);
+if (response.ok) {
+  alert("Registration successful!");
+} else {
+  alert(data.message);
+}
 };
 
   return (
@@ -68,7 +72,7 @@ export default function RegisterPage() {
           text="Register"
           color="blue"
           fullWidth={true}
-           onClick={handleRegister}
+           onClick={handleRegister} 
         />
 
         <p className="mt-6 text-center text-sm text-gray-600">
