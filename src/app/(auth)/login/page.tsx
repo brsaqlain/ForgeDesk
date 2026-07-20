@@ -1,5 +1,5 @@
 "use client";
-
+import { signIn } from "next-auth/react";
 import { Eye, EyeOff, Mail } from "lucide-react";
 import { useState } from "react";
 import Button from "@/components/ui/Button";
@@ -14,25 +14,20 @@ export default function LoginPage() {
 const [password, setPassword] = useState("");
 const router = useRouter();
 const handleLogin = async () => {
-  const response = await fetch("/api/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email,
-      password,
-    }),
+  const result = await signIn("credentials", {
+    email,
+    password,
+    redirect: false,
   });
 
-  const data = await response.json();
-
-  if (response.ok) {
-  router.push("/dashboard");
+  if (result?.error) {
+    alert("Invalid email or password");
   } else {
-    alert(data.message);
+    router.push("/dashboard");
   }
 };
+
+ 
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-cyan-100 via-cyan-200 to-sky-300 p-6">
