@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import LogoutButton from "@/components/LogoutButton";
@@ -9,7 +10,12 @@ export default async function DashboardPage() {
   if (!session) {
     redirect("/login");
   }
-
+  const projects = await prisma.project.findMany({
+  where: {
+    ownerId: session.user.id,
+  },
+});
+console.log(projects);
   return (
     <main className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-4xl rounded-xl bg-white p-8 shadow">
@@ -28,6 +34,20 @@ export default async function DashboardPage() {
         </div>
 
         <CreateProjectForm />
+        <div className="mt-8">
+  <h2 className="mb-4 text-2xl font-bold">
+    Your Projects
+  </h2>
+
+  {projects.map((project) => (
+    <div
+      key={project.id}
+      className="mb-2 rounded-lg border p-4"
+    >
+      {project.title}
+    </div>
+  ))}
+</div>
       </div>
     </main>
   );
