@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import LogoutButton from "@/components/LogoutButton";
+import CreateProjectForm from "@/components/CreateProjectForm";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -25,6 +26,8 @@ export default async function DashboardPage() {
 
           <LogoutButton />
         </div>
+
+        <CreateProjectForm />
       </div>
     </main>
   );
