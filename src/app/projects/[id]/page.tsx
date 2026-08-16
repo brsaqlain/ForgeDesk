@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 import EditProjectForm from "@/components/EditProjectForm";
 import DeleteProjectButton from "@/components/DeleteProjectButton";
+import CreateTaskForm from "@/components/CreateTaskForm";
+import TaskList from "@/components/TaskList";
 
 type ProjectPageProps = {
   params: Promise<{
@@ -26,6 +28,9 @@ export default async function ProjectPage({
       id,
       ownerId: session.user.id,
     },
+    include: {
+      tasks: true,
+    },
   });
 
   if (!project) {
@@ -44,7 +49,8 @@ export default async function ProjectPage({
         </h1>
 
         <p className="mt-4 text-gray-600">
-          Created on {project.createdAt.toLocaleDateString()}
+          Created on{" "}
+          {project.createdAt.toLocaleDateString()}
         </p>
 
         <EditProjectForm
@@ -55,6 +61,15 @@ export default async function ProjectPage({
         <DeleteProjectButton
           projectId={project.id}
         />
+
+        <CreateTaskForm
+          projectId={project.id}
+        />
+
+       <TaskList
+  projectId={project.id}
+  tasks={project.tasks}
+/>
       </div>
     </main>
   );
