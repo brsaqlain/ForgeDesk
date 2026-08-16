@@ -21,7 +21,8 @@ export default function ProjectCard({
       </h3>
 
       <p className="mt-2 text-sm text-gray-500">
-        Created on {project.createdAt.toLocaleDateString()}
+        Created on{" "}
+        {project.createdAt.toLocaleDateString()}
       </p>
 
       <p className="mt-4 text-sm font-medium text-blue-600">

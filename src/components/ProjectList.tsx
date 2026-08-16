@@ -1,4 +1,4 @@
-import ProjectCard from "@/components/ProjectCard";
+import ProjectSearch from "@/components/ProjectSearch";
 
 type Project = {
   id: string;
@@ -29,14 +29,7 @@ export default function ProjectList({
         Your Projects
       </h2>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {projects.map((project) => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-          />
-        ))}
-      </div>
+      <ProjectSearch projects={projects} />
     </div>
   );
 }

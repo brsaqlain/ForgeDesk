@@ -3,6 +3,7 @@
 import {
   DndContext,
   DragEndEvent,
+  DragStartEvent,
   DragOverlay,
   useDraggable,
   useDroppable,
@@ -23,17 +24,28 @@ type TaskListProps = {
 };
 
 const columns = [
-  { status: "TODO" as const, title: "To Do" },
-  { status: "IN_PROGRESS" as const, title: "In Progress" },
-  { status: "DONE" as const, title: "Done" },
+  {
+    status: "TODO" as const,
+    title: "To Do",
+  },
+  {
+    status: "IN_PROGRESS" as const,
+    title: "In Progress",
+  },
+  {
+    status: "DONE" as const,
+    title: "Done",
+  },
 ];
 
 function TaskCard({
   task,
   onDelete,
+  onUpdate,
 }: {
   task: Task;
   onDelete: (id: string) => void;
+  onUpdate: (id: string, status: Task["status"]) => void;
 }) {
   const {
     attributes,
@@ -49,22 +61,58 @@ function TaskCard({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
-      className="cursor-grab rounded-lg bg-white p-4 shadow-sm active:cursor-grabbing"
-    >
-      <p className="font-medium">{task.title}</p>
-
-      <button
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={() => onDelete(task.id)}
-        className="mt-3 rounded bg-red-100 px-2 py-1 text-xs text-red-600"
+    <div className="rounded-lg bg-white p-4 shadow-sm">
+      {/* Draggable area */}
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...listeners}
+        {...attributes}
+        className="cursor-grab active:cursor-grabbing"
       >
-        Delete
-      </button>
+        <p className="font-medium">
+          {task.title}
+        </p>
+      </div>
+
+      {/* Buttons */}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {task.status !== "TODO" && (
+          <button
+            onClick={() => onUpdate(task.id, "TODO")}
+            className="rounded bg-gray-200 px-2 py-1 text-xs"
+          >
+            To Do
+          </button>
+        )}
+
+        {task.status !== "IN_PROGRESS" && (
+          <button
+            onClick={() =>
+              onUpdate(task.id, "IN_PROGRESS")
+            }
+            className="rounded bg-blue-100 px-2 py-1 text-xs"
+          >
+            In Progress
+          </button>
+        )}
+
+        {task.status !== "DONE" && (
+          <button
+            onClick={() => onUpdate(task.id, "DONE")}
+            className="rounded bg-green-100 px-2 py-1 text-xs"
+          >
+            Done
+          </button>
+        )}
+
+        <button
+          onClick={() => onDelete(task.id)}
+          className="rounded bg-red-100 px-2 py-1 text-xs text-red-600"
+        >
+          Delete
+        </button>
+      </div>
     </div>
   );
 }
@@ -74,11 +122,13 @@ function Column({
   title,
   tasks,
   onDelete,
+  onUpdate,
 }: {
   status: Task["status"];
   title: string;
   tasks: Task[];
   onDelete: (id: string) => void;
+  onUpdate: (id: string, status: Task["status"]) => void;
 }) {
   const { setNodeRef } = useDroppable({
     id: status,
@@ -89,7 +139,9 @@ function Column({
       ref={setNodeRef}
       className="min-h-72 rounded-xl bg-gray-100 p-4"
     >
-      <h3 className="mb-4 font-semibold">{title}</h3>
+      <h3 className="mb-4 font-semibold">
+        {title}
+      </h3>
 
       <div className="space-y-3">
         {tasks.map((task) => (
@@ -97,6 +149,7 @@ function Column({
             key={task.id}
             task={task}
             onDelete={onDelete}
+            onUpdate={onUpdate}
           />
         ))}
 
@@ -115,9 +168,9 @@ export default function TaskList({
   tasks,
 }: TaskListProps) {
   const router = useRouter();
-  const [activeTask, setActiveTask] = useState<Task | null>(
-    null
-  );
+
+  const [activeTask, setActiveTask] =
+    useState<Task | null>(null);
 
   async function updateTask(
     taskId: string,
@@ -143,7 +196,9 @@ export default function TaskList({
   }
 
   async function deleteTask(taskId: string) {
-    if (!window.confirm("Delete this task?")) return;
+    if (!window.confirm("Delete this task?")) {
+      return;
+    }
 
     const response = await fetch(
       `/api/projects/${projectId}/tasks/${taskId}`,
@@ -160,30 +215,38 @@ export default function TaskList({
     router.refresh();
   }
 
-  function handleDragStart(event: any) {
-    const task = tasks.find(
-      (task) => task.id === event.active.id
-    );
+ function handleDragStart(event: DragStartEvent) {
+  const task = tasks.find(
+    (task) => task.id === event.active.id
+  );
 
-    setActiveTask(task ?? null);
-  }
-
-  async function handleDragEnd(event: DragEndEvent) {
+  setActiveTask(task ?? null);
+}
+  async function handleDragEnd(
+    event: DragEndEvent
+  ) {
     setActiveTask(null);
 
     const { active, over } = event;
 
-    if (!over) return;
+    if (!over) {
+      return;
+    }
 
     const task = tasks.find(
       (task) => task.id === active.id
     );
 
-    if (!task) return;
+    if (!task) {
+      return;
+    }
 
-    const newStatus = over.id as Task["status"];
+    const newStatus =
+      over.id as Task["status"];
 
-    if (task.status === newStatus) return;
+    if (task.status === newStatus) {
+      return;
+    }
 
     await updateTask(task.id, newStatus);
   }
@@ -205,9 +268,11 @@ export default function TaskList({
               status={column.status}
               title={column.title}
               tasks={tasks.filter(
-                (task) => task.status === column.status
+                (task) =>
+                  task.status === column.status
               )}
               onDelete={deleteTask}
+              onUpdate={updateTask}
             />
           ))}
         </div>

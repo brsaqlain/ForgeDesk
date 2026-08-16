@@ -8,6 +8,12 @@ type RouteProps = {
   }>;
 };
 
+const statusNames: Record<string, string> = {
+  TODO: "To Do",
+  IN_PROGRESS: "In Progress",
+  DONE: "Done",
+};
+
 export async function PATCH(
   request: Request,
   { params }: RouteProps
@@ -39,6 +45,13 @@ export async function PATCH(
 
   const body = await request.json();
 
+  if (!statusNames[body.status]) {
+    return Response.json(
+      { error: "Invalid task status" },
+      { status: 400 }
+    );
+  }
+
   const task = await prisma.task.findFirst({
     where: {
       id: taskId,
@@ -59,6 +72,13 @@ export async function PATCH(
     },
     data: {
       status: body.status,
+    },
+  });
+
+  await prisma.activity.create({
+    data: {
+      message: `Moved "${task.title}" to ${statusNames[body.status]}`,
+      projectId: id,
     },
   });
 
@@ -111,6 +131,13 @@ export async function DELETE(
   await prisma.task.delete({
     where: {
       id: taskId,
+    },
+  });
+
+  await prisma.activity.create({
+    data: {
+      message: `Deleted task "${task.title}"`,
+      projectId: id,
     },
   });
 
