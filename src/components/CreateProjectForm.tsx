@@ -23,8 +23,17 @@ export default function CreateProjectForm() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create project");
-      }
+  const errorData = await response.json();
+
+  console.error("Create project failed:", {
+    status: response.status,
+    data: errorData,
+  });
+
+  throw new Error(
+    errorData.error || "Failed to create project"
+  );
+}
 
       const project = await response.json();
 

@@ -23,7 +23,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-gray-100 p-8">
-      <div className="mx-auto max-w-4xl rounded-xl bg-white p-8 shadow">
+      <div className="mx-auto max-w-5xl rounded-xl bg-white p-8 shadow">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">

@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
+import EditProjectForm from "@/components/EditProjectForm";
+import DeleteProjectButton from "@/components/DeleteProjectButton";
 
 type ProjectPageProps = {
   params: Promise<{
@@ -32,7 +34,7 @@ export default async function ProjectPage({
 
   return (
     <main className="min-h-screen bg-gray-100 p-8">
-      <div className="mx-auto max-w-4xl rounded-xl bg-white p-8 shadow">
+      <div className="mx-auto max-w-5xl rounded-xl bg-white p-8 shadow">
         <p className="text-sm text-gray-500">
           Project
         </p>
@@ -42,9 +44,17 @@ export default async function ProjectPage({
         </h1>
 
         <p className="mt-4 text-gray-600">
-          Created on{" "}
-          {project.createdAt.toLocaleDateString()}
+          Created on {project.createdAt.toLocaleDateString()}
         </p>
+
+        <EditProjectForm
+          projectId={project.id}
+          currentTitle={project.title}
+        />
+
+        <DeleteProjectButton
+          projectId={project.id}
+        />
       </div>
     </main>
   );
