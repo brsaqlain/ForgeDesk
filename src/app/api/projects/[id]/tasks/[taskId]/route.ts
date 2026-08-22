@@ -14,6 +14,51 @@ const statusNames: Record<string, string> = {
   DONE: "Done",
 };
 
+async function getProjectAccess(
+  projectId: string,
+  userId: string
+) {
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      OR: [
+        {
+          ownerId: userId,
+        },
+        {
+          members: {
+            some: {
+              userId,
+            },
+          },
+        },
+      ],
+    },
+    include: {
+      members: {
+        where: {
+          userId,
+        },
+      },
+    },
+  });
+
+  if (!project) {
+    return null;
+  }
+
+  const isOwner = project.ownerId === userId;
+
+  const role = isOwner
+    ? "OWNER"
+    : project.members[0]?.role;
+
+  return {
+    project,
+    role,
+  };
+}
+
 export async function PATCH(
   request: Request,
   { params }: RouteProps
@@ -29,14 +74,12 @@ export async function PATCH(
 
   const { id, taskId } = await params;
 
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
-  });
+  const access = await getProjectAccess(
+    id,
+    session.user.id
+  );
 
-  if (!project) {
+  if (!access) {
     return Response.json(
       { error: "Project not found" },
       { status: 404 }
@@ -100,14 +143,12 @@ export async function DELETE(
 
   const { id, taskId } = await params;
 
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
-  });
+  const access = await getProjectAccess(
+    id,
+    session.user.id
+  );
 
-  if (!project) {
+  if (!access) {
     return Response.json(
       { error: "Project not found" },
       { status: 404 }

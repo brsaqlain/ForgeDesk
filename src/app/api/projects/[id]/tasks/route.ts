@@ -7,6 +7,51 @@ type RouteProps = {
   }>;
 };
 
+async function getProjectAccess(
+  projectId: string,
+  userId: string
+) {
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      OR: [
+        {
+          ownerId: userId,
+        },
+        {
+          members: {
+            some: {
+              userId,
+            },
+          },
+        },
+      ],
+    },
+    include: {
+      members: {
+        where: {
+          userId,
+        },
+      },
+    },
+  });
+
+  if (!project) {
+    return null;
+  }
+
+  const isOwner = project.ownerId === userId;
+
+  const role = isOwner
+    ? "OWNER"
+    : project.members[0]?.role;
+
+  return {
+    project,
+    role,
+  };
+}
+
 export async function GET(
   request: Request,
   { params }: RouteProps
@@ -22,14 +67,12 @@ export async function GET(
 
   const { id } = await params;
 
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
-  });
+  const access = await getProjectAccess(
+    id,
+    session.user.id
+  );
 
-  if (!project) {
+  if (!access) {
     return Response.json(
       { error: "Project not found" },
       { status: 404 }
@@ -63,14 +106,12 @@ export async function POST(
 
   const { id } = await params;
 
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
-  });
+  const access = await getProjectAccess(
+    id,
+    session.user.id
+  );
 
-  if (!project) {
+  if (!access) {
     return Response.json(
       { error: "Project not found" },
       { status: 404 }
@@ -78,6 +119,7 @@ export async function POST(
   }
 
   const body = await request.json();
+
   const title = body.title?.trim();
 
   if (!title) {
@@ -90,6 +132,13 @@ export async function POST(
   const task = await prisma.task.create({
     data: {
       title,
+      projectId: id,
+    },
+  });
+
+  await prisma.activity.create({
+    data: {
+      message: `Created task "${task.title}"`,
       projectId: id,
     },
   });

@@ -8,6 +8,7 @@ import CreateTaskForm from "@/components/CreateTaskForm";
 import TaskList from "@/components/TaskList";
 import BackToDashboard from "@/components/BackToDashboard";
 import ActivityList from "@/components/ActivityList";
+import ProjectMembers from "@/components/ProjectMembers";
 
 type ProjectPageProps = {
   params: Promise<{
@@ -28,18 +29,57 @@ export default async function ProjectPage({
 
   const project = await prisma.project.findFirst({
     where: {
-      id: id,
-      ownerId: session.user.id,
+      id,
+      OR: [
+        {
+          ownerId: session.user.id,
+        },
+        {
+          members: {
+            some: {
+              userId: session.user.id,
+            },
+          },
+        },
+      ],
     },
     include: {
       tasks: true,
-      activities: true,
+      activities: {
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 10,
+      },
+      members: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      },
     },
   });
 
   if (!project) {
     notFound();
   }
+
+  const isOwner = project.ownerId === session.user.id;
+
+  const currentMember = project.members.find(
+    (member) => member.userId === session.user.id
+  );
+
+  const isAdmin =
+    currentMember?.role === "ADMIN";
+
+  const canEditProject = isOwner || isAdmin;
+  const canManageMembers = isOwner;
 
   const totalTasks = project.tasks.length;
 
@@ -58,6 +98,7 @@ export default async function ProjectPage({
   return (
     <main className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-6xl rounded-xl bg-white p-8 shadow">
+
         <BackToDashboard />
 
         <div className="flex items-center justify-between">
@@ -74,19 +115,36 @@ export default async function ProjectPage({
               Created on{" "}
               {project.createdAt.toLocaleDateString()}
             </p>
+
+            <div className="mt-3">
+              {isOwner ? (
+                <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700">
+                  OWNER
+                </span>
+              ) : (
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                  {currentMember?.role}
+                </span>
+              )}
+            </div>
           </div>
 
-          <DeleteProjectButton
-            projectId={project.id}
-          />
+          {isOwner && (
+            <DeleteProjectButton
+              projectId={project.id}
+            />
+          )}
         </div>
 
-        <EditProjectForm
-          projectId={project.id}
-          currentTitle={project.title}
-        />
+        {canEditProject && (
+          <EditProjectForm
+            projectId={project.id}
+            currentTitle={project.title}
+          />
+        )}
 
         <div className="mt-8 grid gap-4 md:grid-cols-4">
+
           <div className="rounded-xl border bg-gray-50 p-5">
             <p className="text-sm text-gray-500">
               Total Tasks
@@ -126,6 +184,7 @@ export default async function ProjectPage({
               {completedTasks}
             </p>
           </div>
+
         </div>
 
         <CreateTaskForm
@@ -137,9 +196,17 @@ export default async function ProjectPage({
           tasks={project.tasks}
         />
 
+        {canManageMembers && (
+          <ProjectMembers
+            projectId={project.id}
+            members={project.members}
+          />
+        )}
+
         <ActivityList
           activities={project.activities}
         />
+
       </div>
     </main>
   );
