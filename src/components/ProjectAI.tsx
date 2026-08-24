@@ -39,7 +39,20 @@ export default function ProjectAI({
         }
       );
 
-      const data = await response.json();
+      const text = await response.text();
+
+      let data: {
+        answer?: string;
+        error?: string;
+      };
+
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error(
+          `Server returned an invalid response (${response.status})`
+        );
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -47,14 +60,16 @@ export default function ProjectAI({
         );
       }
 
-      setAnswer(data.answer);
+      setAnswer(
+        data.answer || "AI returned no answer."
+      );
     } catch (error) {
-      console.error(error);
+      console.error("AI Error:", error);
 
       setAnswer(
         error instanceof Error
           ? error.message
-          : "Something went wrong."
+          : "Something went wrong while contacting the AI."
       );
     } finally {
       setLoading(false);
@@ -82,7 +97,7 @@ export default function ProjectAI({
             setQuestion(event.target.value)
           }
           placeholder="What should I work on next?"
-          className="flex-1 rounded-lg border bg-white p-3"
+          className="flex-1 rounded-lg border bg-white p-3 outline-none focus:ring-2 focus:ring-blue-500"
         />
 
         <button

@@ -1,10 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { GoogleGenAI } from "@google/genai";
 
 type RouteProps = {
   params: Promise<{
@@ -12,86 +8,131 @@ type RouteProps = {
   }>;
 };
 
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
+
 export async function POST(
   request: Request,
   { params }: RouteProps
 ) {
-  const session = await auth();
+  try {
+    const session = await auth();
 
-  if (!session?.user?.id) {
-    return Response.json(
-      { error: "Unauthorized" },
-      { status: 401 }
-    );
-  }
+    if (!session?.user?.id) {
+      return Response.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-  const { id } = await params;
-
-  const project = await prisma.project.findFirst({
-    where: {
-      id,
-      OR: [
+    if (!process.env.GEMINI_API_KEY) {
+      return Response.json(
         {
-          ownerId: session.user.id,
+          error:
+            "GEMINI_API_KEY is missing. Check your .env file.",
         },
-        {
-          members: {
-            some: {
-              userId: session.user.id,
+        { status: 500 }
+      );
+    }
+
+    const { id } = await params;
+
+    const project = await prisma.project.findFirst({
+      where: {
+        id,
+        OR: [
+          {
+            ownerId: session.user.id,
+          },
+          {
+            members: {
+              some: {
+                userId: session.user.id,
+              },
             },
           },
-        },
-      ],
-    },
-    include: {
-      tasks: true,
-    },
-  });
+        ],
+      },
+      include: {
+        tasks: true,
+      },
+    });
 
-  if (!project) {
-    return Response.json(
-      { error: "Project not found" },
-      { status: 404 }
-    );
-  }
+    if (!project) {
+      return Response.json(
+        { error: "Project not found" },
+        { status: 404 }
+      );
+    }
 
-  const body = await request.json();
-  const question = body.question?.trim();
+    const body = await request.json();
 
-  if (!question) {
-    return Response.json(
-      { error: "Question is required" },
-      { status: 400 }
-    );
-  }
+    const question = body.question?.trim();
 
-  const taskSummary = project.tasks
-    .map(
-      (task) =>
-        `- ${task.title} [${task.status}]`
-    )
-    .join("\n");
+    if (!question) {
+      return Response.json(
+        { error: "Question is required" },
+        { status: 400 }
+      );
+    }
 
-  const response = await openai.responses.create({
-    model: "gpt-5-mini",
-    input: `
-You are the AI assistant for a project management
-application called ForgeDesk.
+    const taskSummary =
+      project.tasks.length > 0
+        ? project.tasks
+            .map(
+              (task) =>
+                `- ${task.title} [${task.status}]`
+            )
+            .join("\n")
+        : "No tasks yet.";
 
-Project: ${project.title}
+    const prompt = `
+You are the AI assistant for ForgeDesk, a project management application.
+
+Project:
+${project.title}
 
 Tasks:
-${taskSummary || "No tasks yet."}
+${taskSummary}
 
 User question:
 ${question}
 
-Answer based primarily on the project and task
-information provided above. Be concise and useful.
-`,
-  });
+Give a concise, practical answer based on the project information above.
+Do not invent tasks or information that isn't provided.
+`;
 
-  return Response.json({
-    answer: response.output_text,
-  });
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: prompt,
+    });
+
+    const answer =
+      response.text ||
+      "Gemini did not return an answer.";
+
+    await prisma.activity.create({
+      data: {
+        projectId: id,
+        message: `Asked ForgeDesk AI: "${question}"`,
+      },
+    });
+
+    return Response.json({
+      answer,
+    });
+  } catch (error) {
+    console.error("Gemini AI Error:", error);
+
+    return Response.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Gemini request failed",
+      },
+      { status: 500 }
+    );
+  }
 }

@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect, notFound } from "next/navigation";
 
+import ProjectAI from "@/components/ProjectAI";
 import EditProjectForm from "@/components/EditProjectForm";
 import DeleteProjectButton from "@/components/DeleteProjectButton";
 import CreateTaskForm from "@/components/CreateTaskForm";
@@ -194,6 +195,10 @@ export default async function ProjectPage({
         <TaskList
           projectId={project.id}
           tasks={project.tasks}
+        />
+
+        <ProjectAI
+          projectId={project.id}
         />
 
         {canManageMembers && (
